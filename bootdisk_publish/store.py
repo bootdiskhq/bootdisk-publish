@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 import hashlib
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import tempfile
 
 from .manifest import ManifestError
@@ -20,19 +20,28 @@ class StoredOriginal:
     created: bool
 
 
-def original_object_path(store_root, sha256):
-    """Return the deterministic object path for one SHA-256 digest."""
-
+def _normalized_sha256(sha256):
     if (
         not isinstance(sha256, str)
         or len(sha256) != 64
         or any(ch not in "0123456789abcdefABCDEF" for ch in sha256)
     ):
         raise ManifestError("original-store SHA-256 must be 64 hexadecimal characters")
+    return sha256.lower()
 
-    digest = sha256.lower()
+
+def original_object_key(sha256):
+    """Return the stable store-relative key for one original object."""
+
+    digest = _normalized_sha256(sha256)
+    return PurePosixPath("assets") / "sha256" / digest[:2] / digest[2:4] / digest
+
+
+def original_object_path(store_root, sha256):
+    """Return the deterministic local object path for one SHA-256 digest."""
+
     root = Path(store_root).expanduser()
-    return root / "assets" / "sha256" / digest[:2] / digest[2:4] / digest
+    return root / original_object_key(sha256)
 
 
 def _hash_file(path):
