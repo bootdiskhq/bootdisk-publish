@@ -172,7 +172,7 @@ class ImageBundleTests(unittest.TestCase):
         manifest = self.write_manifest()
         extraction = self.write_extraction(corrupt_screenshot=True)
 
-        with self.assertRaisesRegex(ManifestError, "changed since extraction"):
+        with self.assertRaisesRegex(ManifestError, "do not match manifest"):
             publish_image_bundle(manifest, extraction, self.output)
 
 
