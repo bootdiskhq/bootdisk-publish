@@ -7,7 +7,7 @@ name = "bootdisk-publish"
 version = "0.1.0.dev0"
 description = "Manifest-driven publication tooling for Bootdisk"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = ["Pillow>=12.3.0"]
 
 [project.scripts]
 bootdisk-publish = "bootdisk_publish.cli:main"

@@ -6,6 +6,7 @@ import sys
 
 from . import __version__
 from .assets import iter_image_assets
+from .bundle import publish_image_bundle
 from .manifest import ManifestError, load_ingest_manifest
 
 
@@ -40,6 +41,19 @@ def build_parser():
         action="store_true",
         help="Validate the manifest and print a source-agnostic summary",
     )
+    parser.add_argument(
+        "--publish-images",
+        action="store_true",
+        help="Publish explicit image originals, WebP thumbnails, and publish-manifest.json",
+    )
+    parser.add_argument(
+        "--extraction",
+        help="Path to the preservation extraction used as the only asset byte source",
+    )
+    parser.add_argument(
+        "--output",
+        help="Output directory for the publication bundle",
+    )
     return parser
 
 
@@ -55,12 +69,40 @@ def main(argv=None):
         if args.inspect:
             print(json.dumps(_inspection_summary(manifest), ensure_ascii=False, indent=2))
             return 0
+
+        if args.publish_images:
+            if not args.extraction or not args.output:
+                print(
+                    "error: --publish-images requires --extraction and --output",
+                    file=sys.stderr,
+                )
+                return 2
+            result = publish_image_bundle(
+                args.manifest,
+                args.extraction,
+                args.output,
+            )
+            print(
+                json.dumps(
+                    {
+                        "publish_manifest": str(result.manifest_path),
+                        "originals": result.originals.total,
+                        "originals_created": result.originals.created,
+                        "originals_reused": result.originals.reused,
+                        "thumbnails": len(result.thumbnails),
+                        "thumbnails_created": sum(item.created for item in result.thumbnails),
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+            return 0
     except ManifestError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
     print(
-        "Manifest is valid. Asset publication is not enabled yet.",
+        "Manifest is valid. Use --inspect or --publish-images.",
         file=sys.stderr,
     )
     return 0
